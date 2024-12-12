@@ -1,23 +1,42 @@
 from rest_framework import serializers
 
-from posts.models import Post, User
+from posts.models import Post, Group, User, Comment
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'author', 'post', 'text', 'created')
+        read_only_fields = ('author', 'post')
+
+
+class GroupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Group
+        fields = ('id', 'title', 'slug', 'description')
 
 
 class PostSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Post
-        fields = ('text', 'pub_date', 'author')
+        fields = ('id', 'text', 'pub_date', 'author', 'image', 'group')
+        read_only_fields = ('author', 'pub_date')
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
-        models = User
+        model = User
         fields = ('id', 'username',)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
