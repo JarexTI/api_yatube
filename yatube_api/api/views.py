@@ -1,23 +1,29 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .serializers import (
-    PostSerializer,
-    UserSerializer,
-    UserRegistrationSerializer,
-    GroupSerializer,
-    CommentSerializer,
-)
-from posts.models import Post, User, Group, Comment
+from posts.models import Comment, Group, Post, User
+
+from .serializers import (CommentSerializer, GroupSerializer, PostSerializer,
+                          UserRegistrationSerializer, UserSerializer)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+
+    def list(self, request, *args, **kwargs):
+        post_id = int(self.request.get_full_path().split('/')[4])
+        comments = self.queryset.filter(post__id=post_id)
+        serializer = self.get_serializer(comments, many=True)
+        return Response(serializer.data)
+
+    def perform_create(self, serializer):
+        number_post = int(self.request.get_full_path().split('/')[4])
+        post = get_object_or_404(Post, pk=number_post)
+        serializer.save(author=self.request.user, post=post)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
