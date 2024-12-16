@@ -1,10 +1,13 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from posts.models import Comment, Group, Post, User
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(read_only=True)
+    author = serializers.SlugRelatedField(
+        slug_field='username', read_only=True
+    )
 
     class Meta:
         model = Comment
@@ -20,7 +23,9 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(read_only=True)
+    author = serializers.SlugRelatedField(
+        slug_field='username', read_only=True
+    )
 
     class Meta:
         model = Post
@@ -42,6 +47,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'password')
 
+    @transaction.atomic
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data['username'],
