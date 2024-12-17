@@ -16,14 +16,15 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (IsAuthenticated, IsAuthor)
 
-    def list(self, request, *args, **kwargs):
-        post_id = self.kwargs.get('post_id')
-        comments = self.queryset.filter(post__id=post_id)
-        serializer = self.get_serializer(comments, many=True)
-        return Response(serializer.data)
+    def get_post_id(self):
+        return self.kwargs.get('post_id')
+
+    def get_queryset(self):
+        post_id = self.get_post_id()
+        return Comment.objects.filter(post__id=post_id)
 
     def perform_create(self, serializer):
-        post_id = self.kwargs.get('post_id')
+        post_id = self.get_post_id()
         post = get_object_or_404(Post, pk=post_id)
         serializer.save(author=self.request.user, post=post)
 
@@ -32,32 +33,14 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        user_db = get_object_or_404(User, username=user)
-        if not user_db.is_staff and not user_db.is_superuser:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().create(request, *args, **kwargs)
-
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permission_classes = (IsAuthenticated, IsAuthor)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != request.user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        return super().update(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != request.user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        return super().destroy(request, *args, **kwargs)
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
